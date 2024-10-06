@@ -193,28 +193,31 @@ public class Tableau {
                 originalObjective[i] = lp.isMaximize() ? objectiveCoefficients[i] : -objectiveCoefficients[i];
             }
             double[] artificialObjective = new double[numVariables + numConstraints + 1 + countGeq]; // all surplus + artificial
-            for (int i = 0; i < numConstraints; i++) { // 1 in index of artificial variables for Z row
-                if (lp.getConstraints().get(i).getType() == 1) { // EQUAL constraint
+            for (int l = 0; l < numConstraints; l++) { // 1 in index of artificial variables for Z row
+                int i = 0; // need other idx, not j, will maybe address later
+                if (lp.getConstraints().get(l).getType() == 1) { // EQUAL constraint
                     artificialObjective[numVariables + i + k] = 1.0; // 1 for artificial variable
                     this.artificialVariablesIndex[i] = numVariables + i + k; // save artificial variables index
-                } else if (lp.getConstraints().get(i).getType() == 2) {
+                    i++;
+                } else if (lp.getConstraints().get(l).getType() == 2) {
                     artificialObjective[numVariables + i + k + 1] = 1.0; // count for surplus variable, add 2
                     this.artificialVariablesIndex[i] = numVariables + i + k + 1; // save artificial var
+                    i++;
                 }
                 // here we need to fill the tableau with the right constraints and surplus, artificial, RHS ..
                 Constraint constraint = lp.getConstraints().get(i);
                 for (int j = 0; j < numVariables; j++) {
-                    tableau[i + 1][j] = constraint.getCoefficients()[j]; // all elements of constraint
+                    tableau[l + 1][j] = constraint.getCoefficients()[j]; // all elements of constraint
                 }
                 // insert RHS and surplus/slack/artificial
                 // for EQ and LEQ, this is the same operation, for GEQ we need to vary it
-                tableau[i + 1][tableau[0].length - 1] = constraint.getRHS(); // put RHS in last column of constraint
+                tableau[l + 1][tableau[0].length - 1] = constraint.getRHS(); // put RHS in last column of constraint
                 if (constraint.getType() == 2) { // if geq, need -1 and 1 (surplus, artificial)
-                    tableau[i + 1][numVariables + i + k] = -1; // -1 for surplus variable
-                    tableau[i + 1][numVariables + i + k + 1] = 1; // 1 for artificial variable
+                    tableau[l + 1][numVariables + l + k] = -1; // -1 for surplus variable
+                    tableau[l + 1][numVariables + l + k + 1] = 1; // 1 for artificial variable
                     k++; // increase by 1 so that next constraint will account for surplus too
                 } else { // when we just have EQ or LEQ we just need slack
-                    tableau[i + 1][numVariables + i + k] = 1; // if leq, just 1 artificial, if eq, just 1 artificial
+                    tableau[l + 1][numVariables + l + k] = 1; // if leq, just 1 artificial, if eq, just 1 artificial
                 }
             }
             this.objectiveCoefficients = artificialObjective; // minimize sum of artificial variables first
